@@ -5,6 +5,7 @@ type Block struct {
 	prev   *Block //from which
 	owner  int    //id of node
 	round  int    //which round
+	seq    int
 }
 
 func NewBlock(isEvil bool, prev *Block, owner int, round int) *Block {
