@@ -1,17 +1,21 @@
 package character
 
+import "github.com/rayguo17/pow/cmd/block"
+
 //every round done, should be able to manually start next round, after checking the output.
 type Synchronizer struct {
 	nodeNums           int
 	hashDoneInformChan chan bool
 	round              int
-	receiveBlockChan   chan *Block
+	receiveBlockChan   chan *block.Node
 	broadCastBlockChan chan *BlockWrap
 	summaryChan        chan *RoundSummary
 	blockSeq           int
+	chain              *block.Tree
 }
 
-func NewSynchronizer(nodeNums int, hashDoneInformChan chan bool, receiveBlockChan chan *Block, broadCastBlockChan chan *BlockWrap, summaryChan chan *RoundSummary) *Synchronizer {
+func NewSynchronizer(nodeNums int, hashDoneInformChan chan bool, receiveBlockChan chan *block.Node, broadCastBlockChan chan *BlockWrap, summaryChan chan *RoundSummary, initBlock *block.Node) *Synchronizer {
+	chain := block.NewTree(initBlock)
 	return &Synchronizer{
 		nodeNums:           nodeNums,
 		hashDoneInformChan: hashDoneInformChan,
@@ -20,6 +24,7 @@ func NewSynchronizer(nodeNums int, hashDoneInformChan chan bool, receiveBlockCha
 		summaryChan:        summaryChan,
 		round:              0,
 		blockSeq:           0,
+		chain:              chain,
 	}
 }
 

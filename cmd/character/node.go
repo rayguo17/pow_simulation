@@ -1,21 +1,27 @@
 package character
 
-import "math/rand"
+import (
+	"github.com/rayguo17/pow/cmd/block"
+	"math/rand"
+)
 
 type Node struct {
 	probability         float64
 	id                  int
-	receiveBlockChan    chan *Block
+	receiveBlockChan    chan *block.Node
 	broadcastChan       chan *BlockWrap //when block mined broadcast
 	isEvil              bool            //behave differently
 	hashRound           int             //how many hash function could be done in one round?
 	roundEndChan        chan *RoundSummary
 	informRoundDoneChan chan bool //tell sychronizer done with no block associated
 	round               int
-	blockStorage        []*Block //storage data structure should be different
+	blockStorage        []*Block   //storage data structure should be different
+	random              *rand.Rand //not safe for goroutine so each different
+	chain               *block.Tree
 }
 
-func NewNode(id int, receiveBlockChan chan *Block, broadcastChan chan *BlockWrap, probability float64, isEvil bool, hashRound int, roundEndChan chan *RoundSummary, informRoundDoneChan chan bool) *Node {
+func NewNode(id int, receiveBlockChan chan *block.Node, broadcastChan chan *BlockWrap, probability float64, isEvil bool, hashRound int, roundEndChan chan *RoundSummary, informRoundDoneChan chan bool, random *rand.Rand, initBlock *block.Node) *Node {
+	chain := block.NewTree(initBlock)
 	return &Node{
 		id:                  id,
 		receiveBlockChan:    receiveBlockChan,
@@ -26,6 +32,8 @@ func NewNode(id int, receiveBlockChan chan *Block, broadcastChan chan *BlockWrap
 		roundEndChan:        roundEndChan,
 		round:               0,
 		informRoundDoneChan: informRoundDoneChan,
+		random:              random,
+		chain:               chain,
 	}
 }
 
