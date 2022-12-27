@@ -8,14 +8,14 @@ const (
 )
 
 type BlockWrap struct {
-	isEvil   bool //tag only for simulation
-	prevEvil bool
-	prev     *block.Node //from which
-	owner    int         //id of node
-	round    int         //which round
+	IsEvil   bool //tag only for simulation
+	PrevEvil bool
+	Prev     *block.Node //from which
+	Owner    int         //id of node
+	Round    int         //which Round
 }
 
 type RoundSummary struct {
-	blocks    []*block.Node
-	roundType int
+	Blocks    []*block.Node
+	RoundType int
 }

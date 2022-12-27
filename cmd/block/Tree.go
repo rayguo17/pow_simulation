@@ -1,6 +1,9 @@
 package block
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 type Tree struct {
 	storage map[int]*Node //[seq]*node
@@ -14,6 +17,23 @@ func NewTree(initBlock *Node) *Tree {
 	}
 	tree.AddNode(initBlock)
 	return tree
+}
+func (t *Tree) PrintChain() {
+	bl := make([][]int, 0, len(t.leaves))
+	for i := 0; i < len(t.leaves); i++ {
+		tchain := make([]int, 0)
+		tmpBlock := t.storage[t.leaves[i]]
+		for tmpBlock != nil {
+			tchain = append(tchain, tmpBlock.seq)
+			tmpBlock = tmpBlock.prev
+		}
+		bl = append(bl, tchain)
+		for j := len(tchain) - 1; j >= 0; j-- {
+			fmt.Printf("%d ", tchain[j])
+		}
+		fmt.Println("")
+	}
+
 }
 
 func (t *Tree) AddNode(node *Node) error {
@@ -30,6 +50,12 @@ func (t *Tree) AddNode(node *Node) error {
 	//have value
 	if t.inLeaves(node.prev.seq) {
 		t.updateLeaves(node.prev.seq, node.seq)
+		t.storage[node.seq] = node
+		return nil
+	}
+	//
+	if _, ok := t.storage[node.prev.seq]; ok {
+		t.leaves = append(t.leaves, node.seq)
 		t.storage[node.seq] = node
 		return nil
 	}

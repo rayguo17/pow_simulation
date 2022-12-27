@@ -1,5 +1,7 @@
 package block
 
+import "fmt"
+
 type Node struct {
 	isEvil   bool //tag only for simulation
 	prevEvil bool
@@ -19,7 +21,14 @@ func NewBlock(e bool, pe bool, prev *Node, owner int, round int, seq int) *Node 
 		seq:      seq,
 	}
 }
+func (n *Node) PrintBlock() {
+	fmt.Printf("round: %d, seq: %d, prevSeq: %d, owner: %d, isEvil: %v, prevEvil: %v\n", n.round, n.seq, n.prev.seq, n.owner, n.isEvil, n.prevEvil)
+}
 
 func (n *Node) InheritEvil() bool {
 	return n.isEvil || n.prevEvil
+}
+
+func (n *Node) GetPrevBlock() *Node {
+	return n.prev
 }

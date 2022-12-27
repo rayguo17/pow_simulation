@@ -1,18 +1,18 @@
 package character
 
 //type Block struct {
-//	isEvil bool   //tag only for simulation
-//	prev   *Block //from which
-//	owner  int    //id of node
-//	round  int    //which round
+//	IsEvil bool   //tag only for simulation
+//	Prev   *Block //from which
+//	Owner  int    //id of node
+//	Round  int    //which Round
 //	seq    int
 //}
 
-//func NewBlock(isEvil bool, prev *block, owner int, round int) *Block {
+//func NewBlock(IsEvil bool, Prev *block, Owner int, Round int) *Block {
 //	return &Block{
-//		isEvil: isEvil,
-//		prev:   prev,
-//		owner:  owner,
-//		round:  round,
+//		IsEvil: IsEvil,
+//		Prev:   Prev,
+//		Owner:  Owner,
+//		Round:  Round,
 //	}
 //}

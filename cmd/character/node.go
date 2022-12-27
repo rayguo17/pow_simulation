@@ -7,33 +7,31 @@ import (
 )
 
 type Node struct {
-	probability         float64
-	id                  int
-	receiveBlockChan    chan *block.Node
-	broadcastChan       chan *BlockWrap //when block mined broadcast
-	isEvil              bool            //behave differently
-	hashRound           int             //how many hash function could be done in one round?
-	roundEndChan        chan *RoundSummary
-	informRoundDoneChan chan bool //tell sychronizer done with no block associated
-	round               int
-	random              *rand.Rand //not safe for goroutine so each different
-	chain               *block.Tree
+	probability        float64
+	id                 int
+	broadcastChan      chan *BlockWrap //when block mined broadcast
+	isEvil             bool            //behave differently
+	hashRound          int             //how many hash function could be done in one round?
+	roundEndChan       chan *RoundSummary
+	hashDoneInformChan chan bool //tell sychronizer done with no block associated
+	round              int
+	random             *rand.Rand //not safe for goroutine so each different
+	chain              *block.Tree
 }
 
-func NewNode(id int, receiveBlockChan chan *block.Node, broadcastChan chan *BlockWrap, probability float64, isEvil bool, hashRound int, roundEndChan chan *RoundSummary, informRoundDoneChan chan bool, random *rand.Rand, initBlock *block.Node) *Node {
+func NewNode(id int, broadcastChan chan *BlockWrap, probability float64, isEvil bool, hashRound int, roundEndChan chan *RoundSummary, hashDoneInformChan chan bool, random *rand.Rand, initBlock *block.Node) *Node {
 	chain := block.NewTree(initBlock)
 	return &Node{
-		id:                  id,
-		receiveBlockChan:    receiveBlockChan,
-		broadcastChan:       broadcastChan,
-		probability:         probability,
-		isEvil:              isEvil,
-		hashRound:           hashRound,
-		roundEndChan:        roundEndChan,
-		round:               0,
-		informRoundDoneChan: informRoundDoneChan,
-		random:              random,
-		chain:               chain,
+		id:                 id,
+		broadcastChan:      broadcastChan,
+		probability:        probability,
+		isEvil:             isEvil,
+		hashRound:          hashRound,
+		roundEndChan:       roundEndChan,
+		round:              0,
+		hashDoneInformChan: hashDoneInformChan,
+		random:             random,
+		chain:              chain,
 	}
 }
 
@@ -42,11 +40,11 @@ func NewNode(id int, receiveBlockChan chan *block.Node, broadcastChan chan *Bloc
 //2. branch diver
 
 //should be able to control params... especially in the case of building.
-//every round the probability of having new blocks...
-//every round could access q times hash, everytime hash has a probability... -> relate to difficulty
+//every Round the probability of having new Blocks...
+//every Round could access q times hash, everytime hash has a probability... -> relate to difficulty
 func (n *Node) MainRoutine() {
 
-	//for every round listen to different chain and also generate own block,
+	//for every Round listen to different chain and also generate own block,
 	for {
 		//do calculation routine
 		n.calculate()
@@ -69,16 +67,22 @@ question:
 3. how does each node store block tree?
 */
 func (n *Node) handleSum(sum *RoundSummary) {
-
+	if sum.RoundType == VOID {
+		return
+	} else {
+		for i := 0; i < len(sum.Blocks); i++ {
+			n.chain.AddNode(sum.Blocks[i])
+		}
+	}
 }
 func (n *Node) packageBlock(prevBlock *block.Node) {
 	//create new block
 	bw := &BlockWrap{
-		owner:    n.id,
-		isEvil:   n.isEvil,
-		prev:     prevBlock,
-		prevEvil: prevBlock.InheritEvil(),
-		round:    n.round,
+		Owner:    n.id,
+		IsEvil:   n.isEvil,
+		Prev:     prevBlock,
+		PrevEvil: prevBlock.InheritEvil(),
+		Round:    n.round,
 	}
 	n.broadcastChan <- bw
 }
@@ -93,9 +97,11 @@ func (n *Node) calculate() {
 		if res == true {
 			//handle package block
 			n.packageBlock(mainBlock)
+			return
 		}
 	}
 	//if none of the block could be done then tell the synchronizer
+	n.hashDoneInformChan <- true
 }
 
 func (n *Node) getMainBlock() *block.Node {
@@ -110,7 +116,6 @@ func (n *Node) getMainBlock() *block.Node {
 	}
 	return nil
 }
-
-func (n *Node) verifyBlock(b *block.Node) {
-
+func (n *Node) IsEvil() bool {
+	return n.isEvil
 }
