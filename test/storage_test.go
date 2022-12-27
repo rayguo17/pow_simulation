@@ -7,11 +7,11 @@ import (
 )
 
 func TestStorage(t *testing.T) {
-	initBlock := block.NewBlock(false, false, nil, -1, -1, -1)
+	initBlock := block.NewBlock(false, false, nil, -1, -1, -1, false, -2)
 	tree := block.NewTree(initBlock)
 	prevBlock := initBlock
 	for i := 0; i < 10; i++ {
-		tmpBlock := block.NewBlock(false, false, prevBlock, 0, i, i)
+		tmpBlock := block.NewBlock(false, false, prevBlock, 0, i, i, false, -2)
 		tree.AddNode(tmpBlock)
 		prevBlock = tmpBlock
 	}
@@ -19,7 +19,7 @@ func TestStorage(t *testing.T) {
 		prevBlock = prevBlock.GetPrevBlock()
 	}
 	for i := 0; i < 5; i++ {
-		tmpBlock := block.NewBlock(false, false, prevBlock, 0, 10+i, 10+i)
+		tmpBlock := block.NewBlock(false, false, prevBlock, 0, 10+i, 10+i, false, -2)
 		tree.AddNode(tmpBlock)
 		prevBlock = tmpBlock
 	}

@@ -16,11 +16,11 @@ import (
 )
 
 func main() {
-	nodeNum := 20
-	evilNum := 20
-	difficulty := 0.00005
+	nodeNum := 10
+	evilNum := 10
+	difficulty := 0.0005
 	hashRound := 10
-	evilMode := character.Selfish
+	evilMode := character.Sybil
 	broadcastChan := make(chan *common.BlockWrap)
 	roundEndChan := make(chan *common.RoundSummary)
 	hashDoneInformChan := make(chan bool)

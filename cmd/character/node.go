@@ -26,8 +26,10 @@ type Node struct {
 	chain              *block.Tree
 	evilTarget         int //if <-2 do nothing
 	//selfish mining and 51% attack cannot be implement at the same time!
-	evilMode int
-	nodeNum  int
+	evilMode   int
+	nodeNum    int
+	blockRound int //
+	haveMined  bool
 }
 
 func NewNode(id int, broadcastChan chan *common.BlockWrap, probability float64, isEvil bool, hashRound int, roundEndChan chan *common.RoundSummary, hashDoneInformChan chan bool, random *rand.Rand, initBlock *block.Node, evilMode int, nodeNum int) *Node {
@@ -46,6 +48,8 @@ func NewNode(id int, broadcastChan chan *common.BlockWrap, probability float64, 
 		evilTarget:         -2,
 		evilMode:           evilMode,
 		nodeNum:            nodeNum,
+		blockRound:         0,
+		haveMined:          false,
 	}
 }
 
@@ -93,6 +97,11 @@ func (n *Node) handleSum(sum *common.RoundSummary) {
 		}
 	}
 }
+func (n *Node) CalExpectationRound() int {
+	expectedRound := 1.0 / (n.probability * float64(n.nodeNum))
+	//fmt.Println(int(expectedRound))
+	return int(expectedRound)
+}
 func (n *Node) packageBlock(prevBlock *block.Node) {
 	//create new block
 	purpose := false
@@ -114,6 +123,11 @@ func (n *Node) packageBlock(prevBlock *block.Node) {
 	}
 	n.broadcastChan <- bw
 }
+
+//define selfish mining:
+/*
+	if we mine the block before the expectation, we wait until expectation to publish this block, until then, we calculate for the next block
+*/
 func (n *Node) calculate() {
 	//decide main block here??
 	mainBlock := n.getMainBlock()
@@ -122,8 +136,10 @@ func (n *Node) calculate() {
 	}
 	for i := 0; i < n.hashRound; i++ {
 		res := rand.Float64() < n.probability
+		n.blockRound += 1
 		if res == true {
 			//handle package block
+			//have count calculate current expectation compare with current round number
 			n.packageBlock(mainBlock)
 			return
 		}
