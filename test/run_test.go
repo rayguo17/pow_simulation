@@ -18,7 +18,7 @@ func TestOneNode(t *testing.T) {
 	roundEndChan := make(chan *character.RoundSummary)
 	hashDoneInformChan := make(chan bool)
 	nodeList := make([]*character.Node, 0)
-	initBlock := block.NewBlock(false, false, nil, -1, -1, -1)
+	initBlock := block.NewBlock(false, false, nil, -1, -1, -1, false)
 	for i := 0; i < nodeNum; i++ {
 		s1 := rand.NewSource(time.Now().UnixNano())
 		r1 := rand.New(s1)

@@ -3,6 +3,15 @@ package block
 import (
 	"errors"
 	"fmt"
+	"os"
+)
+
+const (
+	colorReset  = "\033[0m"
+	colorRed    = "\033[31m"
+	colorYellow = "\033[33m"
+	colorPurple = "\033[35m"
+	colorCyan   = "\033[36m"
 )
 
 type Tree struct {
@@ -18,6 +27,17 @@ func NewTree(initBlock *Node) *Tree {
 	tree.AddNode(initBlock)
 	return tree
 }
+func (t *Tree) GetBlockBySeq(seq int) *Node {
+	return t.storage[seq]
+}
+func (t *Tree) FindEvilTarget(seq int) *Node {
+	for i := 0; i < len(t.leaves); i++ {
+		if t.storage[t.leaves[i]].evilTarget == seq {
+			return t.storage[t.leaves[i]]
+		}
+	}
+	return t.GetBlockBySeq(seq)
+}
 func (t *Tree) PrintChain() {
 	bl := make([][]int, 0, len(t.leaves))
 	for i := 0; i < len(t.leaves); i++ {
@@ -29,9 +49,23 @@ func (t *Tree) PrintChain() {
 		}
 		bl = append(bl, tchain)
 		for j := len(tchain) - 1; j >= 0; j-- {
-			fmt.Printf("%d ", tchain[j])
+			color := colorReset
+			node := t.storage[tchain[j]]
+			if node.isEvilPurpose && node.isEvil {
+				color = colorRed
+			} else if node.isEvil && !node.prevEvil {
+				color = colorPurple
+			} else if t.storage[tchain[j]].prevEvil && node.isEvil {
+				color = colorYellow
+			} else if node.prevEvil && !node.isEvil {
+				color = colorCyan
+			}
+
+			fmt.Fprintf(os.Stdout, "%s %d", color, tchain[j])
+			//fmt.Printf(string(color), "%d ", tchain[j])
+
 		}
-		fmt.Println("")
+		fmt.Println(colorReset)
 	}
 
 }

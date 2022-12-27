@@ -2,24 +2,35 @@ package character
 
 import (
 	"github.com/rayguo17/pow/cmd/block"
+	"github.com/rayguo17/pow/cmd/common"
 	"log"
 	"math/rand"
+)
+
+const (
+	Clean       = 0
+	Sybil   int = 1 //51% attack
+	Selfish     = 2 //Selfish mining
 )
 
 type Node struct {
 	probability        float64
 	id                 int
-	broadcastChan      chan *BlockWrap //when block mined broadcast
-	isEvil             bool            //behave differently
-	hashRound          int             //how many hash function could be done in one round?
-	roundEndChan       chan *RoundSummary
+	broadcastChan      chan *common.BlockWrap //when block mined broadcast
+	isEvil             bool                   //behave differently
+	hashRound          int                    //how many hash function could be done in one round?
+	roundEndChan       chan *common.RoundSummary
 	hashDoneInformChan chan bool //tell sychronizer done with no block associated
 	round              int
 	random             *rand.Rand //not safe for goroutine so each different
 	chain              *block.Tree
+	evilTarget         int //if <-2 do nothing
+	//selfish mining and 51% attack cannot be implement at the same time!
+	evilMode int
+	nodeNum  int
 }
 
-func NewNode(id int, broadcastChan chan *BlockWrap, probability float64, isEvil bool, hashRound int, roundEndChan chan *RoundSummary, hashDoneInformChan chan bool, random *rand.Rand, initBlock *block.Node) *Node {
+func NewNode(id int, broadcastChan chan *common.BlockWrap, probability float64, isEvil bool, hashRound int, roundEndChan chan *common.RoundSummary, hashDoneInformChan chan bool, random *rand.Rand, initBlock *block.Node, evilMode int, nodeNum int) *Node {
 	chain := block.NewTree(initBlock)
 	return &Node{
 		id:                 id,
@@ -32,6 +43,9 @@ func NewNode(id int, broadcastChan chan *BlockWrap, probability float64, isEvil 
 		hashDoneInformChan: hashDoneInformChan,
 		random:             random,
 		chain:              chain,
+		evilTarget:         -2,
+		evilMode:           evilMode,
+		nodeNum:            nodeNum,
 	}
 }
 
@@ -66,8 +80,12 @@ question:
 2. how does normal node react to invalid or previously valid block.
 3. how does each node store block tree?
 */
-func (n *Node) handleSum(sum *RoundSummary) {
-	if sum.RoundType == VOID {
+func (n *Node) handleSum(sum *common.RoundSummary) {
+	if n.isEvil {
+		//do parse summary
+		n.evilTarget = sum.EvilTargetSeq
+	}
+	if sum.RoundType == common.VOID {
 		return
 	} else {
 		for i := 0; i < len(sum.Blocks); i++ {
@@ -77,12 +95,22 @@ func (n *Node) handleSum(sum *RoundSummary) {
 }
 func (n *Node) packageBlock(prevBlock *block.Node) {
 	//create new block
-	bw := &BlockWrap{
-		Owner:    n.id,
-		IsEvil:   n.isEvil,
-		Prev:     prevBlock,
-		PrevEvil: prevBlock.InheritEvil(),
-		Round:    n.round,
+	purpose := false
+	evilTarget := -2
+	if n.isEvil && n.evilMode == Sybil && n.evilTarget >= -1 {
+		purpose = true
+		evilTarget = n.evilTarget
+	} else {
+		evilTarget = prevBlock.GetEvilTarget()
+	}
+	bw := &common.BlockWrap{
+		Owner:         n.id,
+		IsFromEvil:    n.isEvil,
+		IsEvilPurpose: purpose,
+		Prev:          prevBlock,
+		PrevEvil:      prevBlock.InheritEvil(),
+		Round:         n.round,
+		EvilTarget:    evilTarget,
 	}
 	n.broadcastChan <- bw
 }
@@ -105,6 +133,12 @@ func (n *Node) calculate() {
 }
 
 func (n *Node) getMainBlock() *block.Node {
+	if n.isEvil && n.evilMode == Sybil && n.evilTarget >= -1 {
+		//do something else????
+		//find evil leaves or evil target
+		bl := n.chain.FindEvilTarget(n.evilTarget)
+		return bl
+	}
 	bl := n.chain.GetLongestChain()
 	if len(bl) == 1 {
 		return bl[0]
