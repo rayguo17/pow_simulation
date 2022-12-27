@@ -2,6 +2,7 @@ package character
 
 import (
 	"github.com/rayguo17/pow/cmd/block"
+	"log"
 	"math/rand"
 )
 
@@ -15,7 +16,6 @@ type Node struct {
 	roundEndChan        chan *RoundSummary
 	informRoundDoneChan chan bool //tell sychronizer done with no block associated
 	round               int
-	blockStorage        []*Block   //storage data structure should be different
 	random              *rand.Rand //not safe for goroutine so each different
 	chain               *block.Tree
 }
@@ -71,19 +71,46 @@ question:
 func (n *Node) handleSum(sum *RoundSummary) {
 
 }
-func (n *Node) packageBlock() {
+func (n *Node) packageBlock(prevBlock *block.Node) {
 	//create new block
+	bw := &BlockWrap{
+		owner:    n.id,
+		isEvil:   n.isEvil,
+		prev:     prevBlock,
+		prevEvil: prevBlock.InheritEvil(),
+		round:    n.round,
+	}
+	n.broadcastChan <- bw
 }
 func (n *Node) calculate() {
+	//decide main block here??
+	mainBlock := n.getMainBlock()
+	if mainBlock == nil {
+		log.Fatal("main block should not be empty")
+	}
 	for i := 0; i < n.hashRound; i++ {
 		res := rand.Float64() < n.probability
 		if res == true {
 			//handle package block
-			n.packageBlock()
+			n.packageBlock(mainBlock)
 		}
 	}
 	//if none of the block could be done then tell the synchronizer
 }
-func (n *Node) verifyBlock(b *Block) {
+
+func (n *Node) getMainBlock() *block.Node {
+	bl := n.chain.GetLongestChain()
+	if len(bl) == 1 {
+		return bl[0]
+	}
+	if len(bl) > 1 {
+		nums := len(bl)
+		index := n.random.Intn(nums)
+		return bl[index]
+	}
+	return nil
+}
+
+func (n *Node) verifyBlock(b *block.Node) {
 
 }
